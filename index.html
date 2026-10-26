@@ -697,7 +697,7 @@
           <li>меняйте скорость и положение на временной шкале;</li>
           <li>переключайте освещение и фон сцены.</li>
         </ul>
-        <p class="hero-note">AR доступен только на совместимых мобильных устройствах.</p>
+        <p class="hero-note">Анимация в AR работает в Chrome на Android. На iPhone системный Quick Look показывает модель без скелетного клипа.</p>
       </section>
     </header>
 
@@ -716,11 +716,12 @@
         interaction-prompt="auto"
         auto-rotate
         autoplay
-        animation-name="mixamo.com"
+        animation-name="Animation"
         rotation-per-second="18deg"
         auto-rotate-delay="1200"
         ar
         ar-modes="webxr scene-viewer quick-look"
+        xr-environment
         ar-scale="auto"
         shadow-intensity="1.15"
         shadow-softness="0.8"
@@ -762,7 +763,7 @@
       <div class="animation-main">
         <div class="panel-heading">
           <div>
-            <p class="panel-kicker">Анимационный клип · mixamo.com</p>
+            <p class="panel-kicker">Анимационный клип · Animation</p>
             <h2 id="animation-title">Управление движением</h2>
           </div>
           <output id="animation-status" class="animation-status" aria-live="polite">
@@ -851,13 +852,13 @@
       <article class="guide-item">
         <span class="guide-number" aria-hidden="true">04</span>
         <h2>Дополненная реальность</h2>
-        <p>На поддерживаемом мобильном устройстве появится кнопка запуска AR.</p>
+        <p>Откройте страницу в Chrome на Android, чтобы анимация сохранилась в AR.</p>
       </article>
     </section>
 
     <footer>
       <span>Веб-презентация подготовлена с помощью &lt;model-viewer&gt;</span>
-      <span>Анимация: mixamo.com · 16,83 с</span>
+      <span>Анимация: Animation · 16,83 с</span>
     </footer>
   </main>
 
@@ -934,8 +935,8 @@
         return;
       }
 
-      model.animationName = animations.includes("mixamo.com")
-        ? "mixamo.com"
+      model.animationName = animations.includes("Animation")
+        ? "Animation"
         : animations[0];
       model.timeScale = Number(animationSpeed.value);
       animationIsReady = true;
@@ -961,10 +962,32 @@
       setAnimationControlsDisabled(true);
     });
 
+    const playLoopingAnimation = () => {
+      if (!animationIsReady) {
+        return;
+      }
+
+      model.play({ repetitions: Infinity });
+      animationIsPlaying = true;
+      updateAnimationButton();
+    };
+
     model.addEventListener("ar-status", (event) => {
-      if (event.detail.status === "failed") {
+      const status = event.detail.status;
+
+      if (status === "failed") {
         loadStatus.textContent = "AR не поддерживается";
         loadStatus.dataset.state = "error";
+        return;
+      }
+
+      if (status === "session-started" || status === "object-placed") {
+        model.autoRotate = false;
+        rotateButton.setAttribute("aria-pressed", "false");
+        rotateButton.textContent = "Запустить автоповорот";
+        playLoopingAnimation();
+        loadStatus.textContent = "AR-сессия";
+        loadStatus.dataset.state = "ready";
       }
     });
 
